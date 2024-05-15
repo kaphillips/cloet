@@ -1,26 +1,32 @@
 #!/usr/bin/env python
 import os
 
+
 class BoundsException(Exception):
-    def __init__(self,msg):
+    def __init__(self, msg):
         self.msg = msg
+
     def __str__(self):
         return self.msg
+
 
 class ScenarioException(Exception):
-    def __init__(self,msg):
+    def __init__(self, msg):
         self.msg = msg
+
     def __str__(self):
         return self.msg
+
 
 class RouteException(Exception):
-    def __init__(self,msg):
+    def __init__(self, msg):
         self.msg = msg
+
     def __str__(self):
         return self.msg
 
 
-def check_ul(name,value,min_val=0,max_val=1):
+def check_ul(name, value, min_val=0, max_val=1):
     """
     Description
     -----------
@@ -38,16 +44,24 @@ def check_ul(name,value,min_val=0,max_val=1):
     float, passed value if value within both bounds, otherwise and exception is raised
     """
     if (value < min_val) or (value > max_val):
-        raise BoundsException("bounds of "+name+" are outside of range ("+
-                              str(min_val)+" <= value <= "+str(max_val)+")")
+        raise BoundsException(
+            "bounds of "
+            + name
+            + " are outside of range ("
+            + str(min_val)
+            + " <= value <= "
+            + str(max_val)
+            + ")"
+        )
 
     return value
 
-def check_l(name,value,min_val=0):
+
+def check_l(name, value, min_val=0):
     """
     Description
     -----------
-    Check that a value is above the minimum value for a parameter
+    Check that a value is below the minimum value for a parameter
 
     Arguments
     ----------
@@ -59,13 +73,20 @@ def check_l(name,value,min_val=0):
     ---------
     float, passed value if value above the lower bound, otherwise and exception is raised
     """
-    if (value < min_val):
-        raise BoundsException("bounds of "+name+" are outside of range ("+
-                              str(min_val)+" <= value <= "+str(max_val)+")")
+    if value < min_val:
+        raise BoundsException(
+            "bounds of "
+            + name
+            + " are outside of range ("
+            + " value < "
+            + str(min_val)
+            + ")"
+        )
 
     return value
 
-def check_u(name,value,max_val=1):
+
+def check_u(name, value, max_val=1):
     """
     Description
     -----------
@@ -81,11 +102,18 @@ def check_u(name,value,max_val=1):
     ---------
     float, passed value if value below the upper bound, otherwise and exception is raised
     """
-    if (value < min_val) or (value > max_val):
-            raise BoundsException("bounds of "+name+" are outside of range ("+
-                                  str(min_val)+" <= value <= "+str(max_val)+")")
+    if (value > max_val):
+        raise BoundsException(
+            "bounds of "
+            + name
+            + " are outside of range ("
+            + " value > "
+            + str(max_val)
+            + ")"
+        )
 
     return value
+
 
 def checkfile(file_name):
     """
@@ -104,16 +132,16 @@ def checkfile(file_name):
     string, name of non-existent file in current working directory
     """
     cwd = os.getcwd()
-    cwf = os.path.join(cwd,file_name)
+    cwf = os.path.join(cwd, file_name)
     if not os.path.exists(cwf):
         return cwf
     root, ext = os.path.splitext(os.path.expanduser(cwf))
     dir = os.path.dirname(root)
     fname = os.path.basename(root)
-    candidate = fname+ext
+    candidate = fname + ext
     index = 1
     ls = set(os.listdir(dir))
     while candidate in ls:
-        candidate = "{}_{}{}".format(fname,index,ext)
+        candidate = "{}_{}{}".format(fname, index, ext)
         index += 1
-    return os.path.join(dir,candidate)
+    return os.path.join(dir, candidate)

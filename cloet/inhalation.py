@@ -1,7 +1,8 @@
 from . import checks
 from . import exposures
 
-class inhalation_model(object):
+
+class Inhalation(object):
     def __init__(self, ED=1, NWexp=1, NS=1, EY=40, BW=70, ATc=70, AT=40):
         """
         Attributes:
@@ -18,15 +19,17 @@ class inhalation_model(object):
         skips   : attributes to skip when creating the `inputs` and `outputs` attributes
                   in the model-specific subclasses
         """
-        self.route = 'inhalation'
-        kwargs = {"ED": checks.check_ul('ED',ED,0,365),
-                  "NWexp": NWexp,
-                  "NS": NS,
-                  "EY": checks.check_l('EY',EY,0),
-                  "BW": checks.check_l('BW',BW,0),
-                  "ATc": checks.check_l('ATc',ATc,0),
-                  "AT": AT,
-                  "skips": ['self','model_name','equations', 'scenario','route','skips'],}
+        self.route = "inhalation"
+        kwargs = {
+            "ED": checks.check_ul("ED", ED, 0, 365),
+            "NWexp": NWexp,
+            "NS": NS,
+            "EY": checks.check_l("EY", EY, 0),
+            "BW": checks.check_l("BW", BW, 0),
+            "ATc": checks.check_l("ATc", ATc, 0),
+            "AT": AT,
+            "skips": ["self", "model_name", "equations", "scenario", "route", "skips"],
+        }
         return kwargs
 
     def model_args(self, kwargs):
@@ -34,16 +37,29 @@ class inhalation_model(object):
         Create a dictionary of model arguments and their corresponding values; used to
         create the `inputs` and `outputs` arguments in model subclasses
         """
-        return {k:v for k, v in kwargs.items() if k not in kwargs['skips']}
+        return {k: v for k, v in kwargs.items() if k not in kwargs["skips"]}
 
-class small_volume_solids_handling(inhalation_model):
+
+class SmallVolumeSolidsHandling(Inhalation):
     """
     Class for ChemSTEER's EPA-OPPT Small Volume Solids Handling Inhalation Exposure Model
     """
 
-
-    def __init__(self, Ys, scenario="typical", EF=0.0477, AH=1, Sd=1,
-                 ED=1, NWexp=1, NS=1, EY=40, BW=70, ATc=70, AT=40):
+    def __init__(
+        self,
+        Ys,
+        scenario="typical",
+        EF=0.0477,
+        AH=1,
+        Sd=1,
+        ED=1,
+        NWexp=1,
+        NS=1,
+        EY=40,
+        BW=70,
+        ATc=70,
+        AT=40,
+    ):
         """
         Required Arguments:
         ------------------
@@ -96,9 +112,10 @@ class small_volume_solids_handling(inhalation_model):
         * Indicates potential typographical error in the ChemSTEER User Guide (p 327);
           original text (0 <= ATc)
         """
-        kwargs = inhalation_model.__init__(self, ED=ED, NWexp=NWexp, NS=NS,
-                                           EY=EY, BW=BW, ATc=ATc, AT=AT)
-        self.model_name = 'EPA-OPPT Small Volume Solids Handling'
+        kwargs = Inhalation.__init__(
+            self, ED=ED, NWexp=NWexp, NS=NS, EY=EY, BW=BW, ATc=ATc, AT=AT
+        )
+        self.model_name = "EPA-OPPT Small Volume Solids Handling"
         self.equations = """
                          I    = EF * AH * Ys * Sd
                          NW   = NWexp * NS
@@ -107,49 +124,74 @@ class small_volume_solids_handling(inhalation_model):
                          APDR = I / BW
                          """
 
-        self.scenario = str(scenario).lower().replace(", ",",")
-        if (self.scenario not in self.get_scenarios()):
-            raise ScenarioException("Error! Invalid value for class argument 'scenario' ("
-                                    + str(self.scenario)+"). Options are '"
-                                    + "', '".join(self.get_scenarios()) + "'.")
+        self.scenario = str(scenario).lower().replace(", ", ",")
+        if self.scenario not in self.get_scenarios():
+            raise checks.ScenarioException(
+                "Error! Invalid value for class argument 'scenario' ("
+                + str(self.scenario)
+                + "). Options are '"
+                + "', '".join(self.get_scenarios())
+                + "'."
+            )
 
         kwargs["route"] = self.route
-        kwargs["AH"] = checks.check_ul('AH',AH,0,54)
-        kwargs["Ys"] = checks.check_ul('Ys',Ys,0,1)
-        kwargs["Sd"] = checks.check_ul('Sd',Sd,0,3)
+        kwargs["AH"] = checks.check_ul("AH", AH, 0, 54)
+        kwargs["Ys"] = checks.check_ul("Ys", Ys, 0, 1)
+        kwargs["Sd"] = checks.check_ul("Sd", Sd, 0, 3)
 
-        if (self.scenario == "typical"):
+        if self.scenario == "typical":
             kwargs["EF"] = 0.0477
-        elif (self.scenario == "worst-case"):
+        elif self.scenario == "worst-case":
             kwargs["EF"] = 0.161
-        elif (self.scenario == "user"):
+        elif self.scenario == "user":
             kwargs["EF"] = EF
 
         self.inputs = self.model_args(kwargs)
-        kwargs['skips'] = kwargs['skips'] + list(kwargs.keys())
+        kwargs["skips"] = kwargs["skips"] + list(kwargs.keys())
 
-        kwargs['PDR'] = exposures.potential_dose_rate(**kwargs)
-        kwargs['NW'] = exposures.workers_exposed(**kwargs)
-        kwargs['LADD'] = exposures.daily_dose(t=kwargs['ATc'],**kwargs)
-        kwargs['ADD'] = exposures.daily_dose(t=kwargs['AT'],**kwargs)
-        kwargs['APDR'] = exposures.acute_potential_dose_rate(**kwargs)
+        kwargs["PDR"] = exposures.potential_dose_rate(**kwargs)
+        kwargs["NW"] = exposures.workers_exposed(**kwargs)
+        kwargs["LADD"] = exposures.daily_dose(t=kwargs["ATc"], **kwargs)
+        kwargs["ADD"] = exposures.daily_dose(t=kwargs["AT"], **kwargs)
+        kwargs["APDR"] = exposures.acute_potential_dose_rate(**kwargs)
 
         self.outputs = self.model_args(kwargs)
-        self.outputs['I'] = self.outputs.pop('PDR')
+        self.outputs["I"] = self.outputs.pop("PDR")
 
         return
 
     @classmethod
     def get_scenarios(self):
-        return ['typical','worst-case','user']
+        return ["typical", "worst-case", "user"]
 
-class mass_balance(inhalation_model):
+
+class MassBalance(Inhalation):
     """
     Class for ChemSTEER's EPA-OPPT Mass Balance Inhalation Exposure Model
     """
-    def __init__(self, G, MW, VP, X, scenario='indoor,typical', T=298, Q=3000, k=0.5,
-                 Vm=24.45, b=1.25, h=8 ,vz=440, ED=1, NWexp=1, NS=1, EY=40, BW=70, ATc=70,
-                 AT=40):
+
+    def __init__(
+        self,
+        G,
+        MW,
+        VP,
+        X,
+        scenario="indoor,typical",
+        T=298,
+        Q=3000,
+        k=0.5,
+        Vm=24.45,
+        b=1.25,
+        h=8,
+        vz=440,
+        ED=1,
+        NWexp=1,
+        NS=1,
+        EY=40,
+        BW=70,
+        ATc=70,
+        AT=40,
+    ):
         """
         Required Arguments:
         ------------------
@@ -204,9 +246,10 @@ class mass_balance(inhalation_model):
         outputs: dictionary, all calculated exposure values from ChemSTEER model;
                  {output name: output value}
         """
-        kwargs = inhalation_model.__init__(self, ED=ED, NWexp=NWexp, NS=NS,
-                                           EY=EY, BW=BW, ATc=ATc, AT=AT)
-        self.model_name = 'EPA-OPPT Mass Balance'
+        kwargs = Inhalation.__init__(
+            self, ED=ED, NWexp=NWexp, NS=NS, EY=EY, BW=BW, ATc=ATc, AT=AT
+        )
+        self.model_name = "EPA-OPPT Mass Balance"
         self.equations = """
                          Cv = min(((170000 * T * G) / (MW * Q * k)),(1000000 * X * VP / 760))
                          Cm = Cv * MW / Vm
@@ -216,78 +259,99 @@ class mass_balance(inhalation_model):
                          ADD = (I * ED * EY) / (BW * AT * days_per_year)
                          APDR = I / BW
                          """
-        self.scenario = str(scenario).lower().replace(", ",",")
+        self.scenario = str(scenario).lower().replace(", ", ",")
 
-        if (self.scenario not in self.get_scenarios()):
-            raise ScenarioException("Error! Invalid value for class argument 'scenario' ("
-                                    + str(self.scenario)+"). Options are '"
-                                    + "', '".join(self.get_scenarios()) + "'.")
-        kwargs['route'] = self.route
-        kwargs['T'] = T
-        kwargs['G'] = G
-        kwargs['MW'] = MW
-        kwargs['X'] = X
-        kwargs['VP'] = VP
-        kwargs['Vm'] = Vm
-        kwargs['b'] = b
-        kwargs['h'] = h
-        kwargs['EY'] = EY
-        kwargs['BW'] = BW
-        kwargs['ATc'] = ATc
-        kwargs['AT'] = AT
-        if self.scenario == 'indoor,typical':
-            kwargs['Q'] = 3000
-            kwargs['k'] = 0.5
-        elif self.scenario == 'indoor,worst-case':
-            kwargs['Q'] = 500
-            kwargs['k'] = 0.1
-        elif self.scenario == 'outdoor,typical':
-            kwargs['Q'] = 237600
-            kwargs['k'] = 0.5
-        elif self.scenario == 'outdoor,worst-case':
-            kwargs['Q'] = 26400 * (60 * vz / 5280)**3
-            kwargs['k'] = 0.1
-        elif self.scenario == 'user':
-            kwargs['Q'] = Q
-            kwargs['k'] = k
+        if self.scenario not in self.get_scenarios():
+            raise checks.ScenarioException(
+                "Error! Invalid value for class argument 'scenario' ("
+                + str(self.scenario)
+                + "). Options are '"
+                + "', '".join(self.get_scenarios())
+                + "'."
+            )
+        kwargs["route"] = self.route
+        kwargs["T"] = T
+        kwargs["G"] = G
+        kwargs["MW"] = MW
+        kwargs["X"] = X
+        kwargs["VP"] = VP
+        kwargs["Vm"] = Vm
+        kwargs["b"] = b
+        kwargs["h"] = h
+        kwargs["EY"] = EY
+        kwargs["BW"] = BW
+        kwargs["ATc"] = ATc
+        kwargs["AT"] = AT
+        if self.scenario == "indoor,typical":
+            kwargs["Q"] = 3000
+            kwargs["k"] = 0.5
+        elif self.scenario == "indoor,worst-case":
+            kwargs["Q"] = 500
+            kwargs["k"] = 0.1
+        elif self.scenario == "outdoor,typical":
+            kwargs["Q"] = 237600
+            kwargs["k"] = 0.5
+        elif self.scenario == "outdoor,worst-case":
+            kwargs["Q"] = 26400 * (60 * vz / 5280) ** 3
+            kwargs["k"] = 0.1
+        elif self.scenario == "user":
+            kwargs["Q"] = Q
+            kwargs["k"] = k
 
         self.inputs = self.model_args(kwargs)
-        kwargs['skips'] = kwargs['skips'] + list(kwargs.keys())
+        kwargs["skips"] = kwargs["skips"] + list(kwargs.keys())
 
-        kwargs['Cv'] = self._Cv(**kwargs)
-        kwargs['Cm'] = self._Cm(**kwargs)
-        kwargs['PDR'] = exposures.potential_dose_rate(**kwargs)
-        kwargs['NW'] = exposures.workers_exposed(**kwargs)
-        kwargs['LADD'] = exposures.daily_dose(t=kwargs['ATc'], **kwargs)
-        kwargs['ADD'] = exposures.daily_dose(t=kwargs['AT'], **kwargs)
-        kwargs['APDR'] = exposures.acute_potential_dose_rate(**kwargs)
+        kwargs["Cv"] = self._Cv(**kwargs)
+        kwargs["Cm"] = self._Cm(**kwargs)
+        kwargs["PDR"] = exposures.potential_dose_rate(**kwargs)
+        kwargs["NW"] = exposures.workers_exposed(**kwargs)
+        kwargs["LADD"] = exposures.daily_dose(t=kwargs["ATc"], **kwargs)
+        kwargs["ADD"] = exposures.daily_dose(t=kwargs["AT"], **kwargs)
+        kwargs["APDR"] = exposures.acute_potential_dose_rate(**kwargs)
 
         self.outputs = self.model_args(kwargs)
-        self.outputs['I'] = self.outputs.pop('PDR')
+        self.outputs["I"] = self.outputs.pop("PDR")
 
         return
 
-    def _Cv(self,T, G, MW, Q, k, X, VP, **kwargs):
+    def _Cv(self, T, G, MW, Q, k, X, VP, **kwargs):
+        return min(((170000 * T * G) / (MW * Q * k)), (1000000 * X * VP / 760))
 
-        return min(((170000 * T * G) / (MW * Q * k)),
-                      (1000000 * X * VP / 760))
-
-    def _Cm(self,Cv, MW, Vm, **kwargs):
+    def _Cm(self, Cv, MW, Vm, **kwargs):
         return Cv * MW / Vm
 
     @classmethod
     def get_scenarios(self):
-        return ['indoor,typical','indoor,worst-case',
-                'outdoor,typical', 'outdoor,worst-case',
-                'user']
+        return [
+            "indoor,typical",
+            "indoor,worst-case",
+            "outdoor,typical",
+            "outdoor,worst-case",
+            "user",
+        ]
 
 
-class pel_limiting_particulates(inhalation_model):
+class PELLimitingParticulates(Inhalation):
     """
     Class for ChemSTEER's OSHA PEL-limiting Model for Substance-specific Particulates Exposure Model
     """
-    def __init__(self, Ys, scenario='user', KCk=15, Ypel=1, b=1.25, h=8,
-                 ED=1, NWexp=1, NS=1, EY=40, BW=70, ATc=70, AT=40):
+
+    def __init__(
+        self,
+        Ys,
+        scenario="user",
+        KCk=15,
+        Ypel=1,
+        b=1.25,
+        h=8,
+        ED=1,
+        NWexp=1,
+        NS=1,
+        EY=40,
+        BW=70,
+        ATc=70,
+        AT=40,
+    ):
         """
         Required Arguments:
         ------------------
@@ -337,9 +401,10 @@ class pel_limiting_particulates(inhalation_model):
         outputs: dictionary, all calculated exposure values from ChemSTEER model;
                  {output name: output value}
         """
-        kwargs = inhalation_model.__init__(self, ED=ED, NWexp=NWexp, NS=NS,
-                                           EY=EY, BW=BW, ATc=ATc, AT=AT)
-        self.model_name = 'OSHA PEL-limiting Model for Substance-specific Particulates'
+        kwargs = Inhalation.__init__(
+            self, ED=ED, NWexp=NWexp, NS=NS, EY=EY, BW=BW, ATc=ATc, AT=AT
+        )
+        self.model_name = "OSHA PEL-limiting Model for Substance-specific Particulates"
         self.equations = """
                          Cm = KCk * Ys / Ypel
                          I = Cm * b * h
@@ -348,31 +413,35 @@ class pel_limiting_particulates(inhalation_model):
                          ADD =  (I * ED * EY) / (BW * AT * days_per_year)
                          APDR = I / BW
                          """
-        self.scenario = str(scenario).lower().replace(", ",",")
+        self.scenario = str(scenario).lower().replace(", ", ",")
         if scenario not in self.get_scenarios():
-            raise ScenarioException("Error! Invalid value for class argument 'scenario' ("
-                                    + str(self.scenario)+"). Options are '"
-                                    + "', '".join(self.get_scenarios()) + "'.")
+            raise checks.ScenarioException(
+                "Error! Invalid value for class argument 'scenario' ("
+                + str(self.scenario)
+                + "). Options are '"
+                + "', '".join(self.get_scenarios())
+                + "'."
+            )
 
-        kwargs['route'] = self.route
-        kwargs['KCk'] = KCk
-        kwargs['Ys'] = checks.check_ul('Ys',Ys,0,1)
-        kwargs['Ypel'] = checks.check_ul('Ypel',Ypel,0,1)
-        kwargs['b'] = checks.check_ul('b',b,0,7.9)
-        kwargs['h'] = checks.check_ul('h',h,0,24)
+        kwargs["route"] = self.route
+        kwargs["KCk"] = KCk
+        kwargs["Ys"] = checks.check_ul("Ys", Ys, 0, 1)
+        kwargs["Ypel"] = checks.check_ul("Ypel", Ypel, 0, 1)
+        kwargs["b"] = checks.check_ul("b", b, 0, 7.9)
+        kwargs["h"] = checks.check_ul("h", h, 0, 24)
 
         self.inputs = self.model_args(kwargs)
-        kwargs['skips'] = kwargs['skips'] + list(kwargs.keys())
+        kwargs["skips"] = kwargs["skips"] + list(kwargs.keys())
 
-        kwargs['Cm'] = self._Cm(**kwargs)
-        kwargs['PDR'] = exposures.potential_dose_rate(**kwargs)
-        kwargs['NW'] = exposures.workers_exposed(**kwargs)
-        kwargs['LADD'] = exposures.daily_dose(t=kwargs['ATc'], **kwargs)
-        kwargs['ADD'] = exposures.daily_dose(t=kwargs['AT'], **kwargs)
-        kwargs['APDR'] = exposures.acute_potential_dose_rate(**kwargs)
+        kwargs["Cm"] = self._Cm(**kwargs)
+        kwargs["PDR"] = exposures.potential_dose_rate(**kwargs)
+        kwargs["NW"] = exposures.workers_exposed(**kwargs)
+        kwargs["LADD"] = exposures.daily_dose(t=kwargs["ATc"], **kwargs)
+        kwargs["ADD"] = exposures.daily_dose(t=kwargs["AT"], **kwargs)
+        kwargs["APDR"] = exposures.acute_potential_dose_rate(**kwargs)
 
         self.outputs = self.model_args(kwargs)
-        self.outputs['I'] = self.outputs.pop('PDR')
+        self.outputs["I"] = self.outputs.pop("PDR")
 
         return
 
@@ -381,15 +450,36 @@ class pel_limiting_particulates(inhalation_model):
 
     @classmethod
     def get_scenarios(self):
-        return ['user']
+        return ["user"]
 
 
-class pel_limiting_vapors(inhalation_model):
+class PELLimitingVapors(Inhalation):
     """
     Class for ChemSTEER's OSHA PEL-limiting Model for Substance-specific Vapors Inhalation Exposure Model
     """
-    def __init__(self, Cvk, VP, Ys, MW, VPpel, Ypel, MWpel, X, scenario='user', Vm=24.45,
-                 b=1.25, h=8, ED=1, NWexp=1, NS=1, EY=40, BW=70, ATc=70, AT=40):
+
+    def __init__(
+        self,
+        Cvk,
+        VP,
+        Ys,
+        MW,
+        VPpel,
+        Ypel,
+        MWpel,
+        X,
+        scenario="user",
+        Vm=24.45,
+        b=1.25,
+        h=8,
+        ED=1,
+        NWexp=1,
+        NS=1,
+        EY=40,
+        BW=70,
+        ATc=70,
+        AT=40,
+    ):
         """
         Required Arguments:
         ------------------
@@ -451,9 +541,10 @@ class pel_limiting_vapors(inhalation_model):
           original text (Cvk is volumetric concentration of chemical in air). This
           correction corresponds with the equation provided by the ChemSTEER program.
         """
-        kwargs = inhalation_model.__init__(self, ED=ED, NWexp=NWexp, NS=NS,
-                                           EY=EY, BW=BW, ATc=ATc, AT=AT)
-        self.model_name = 'OSHA PEL-limiting Model for Substance-specific Vapors'
+        kwargs = Inhalation.__init__(
+            self, ED=ED, NWexp=NWexp, NS=NS, EY=EY, BW=BW, ATc=ATc, AT=AT
+        )
+        self.model_name = "OSHA PEL-limiting Model for Substance-specific Vapors"
         self.equations = """
                          Cv = min(Cvk * (VP * Ys / MW) / (Vppel * Ypel / Mwpel),
                                   (1000000 * X * VP / 760))
@@ -464,57 +555,76 @@ class pel_limiting_vapors(inhalation_model):
                          ADD  = (I * ED * EY) / (BW * AT * days_per_year)
                          APDR = I / BW
                          """
-        self.scenario = str(scenario).lower().replace(", ",",")
+        self.scenario = str(scenario).lower().replace(", ", ",")
         if scenario not in self.get_scenarios():
-            raise ScenarioException("Error! Invalid value for class argument 'scenario' ("
-                                    + str(self.scenario)+"). Options are '"
-                                    + "', '".join(self.get_scenarios()) + "'.")
-        kwargs['route'] = self.route
-        kwargs['Cvk'] = Cvk
-        kwargs['VP'] = VP
-        kwargs['Ys'] = checks.check_ul('Ys',Ys,0,1)
-        kwargs['MW'] = MW
-        kwargs['VPpel'] = VPpel
-        kwargs['Ypel'] = 1 - kwargs['Ys']
-        kwargs['MWpel'] = MWpel
-        kwargs['X'] = checks.check_ul('X',X,0,1)
-        kwargs['Vm'] = checks.check_l('Vm',Vm,0)
-        kwargs['b'] = checks.check_ul('b',b,0,7.9)
-        kwargs['h'] = checks.check_ul('h',h,0,24)
+            raise checks.ScenarioException(
+                "Error! Invalid value for class argument 'scenario' ("
+                + str(self.scenario)
+                + "). Options are '"
+                + "', '".join(self.get_scenarios())
+                + "'."
+            )
+        kwargs["route"] = self.route
+        kwargs["Cvk"] = Cvk
+        kwargs["VP"] = VP
+        kwargs["Ys"] = checks.check_ul("Ys", Ys, 0, 1)
+        kwargs["MW"] = MW
+        kwargs["VPpel"] = VPpel
+        kwargs["Ypel"] = 1 - kwargs["Ys"]
+        kwargs["MWpel"] = MWpel
+        kwargs["X"] = checks.check_ul("X", X, 0, 1)
+        kwargs["Vm"] = checks.check_l("Vm", Vm, 0)
+        kwargs["b"] = checks.check_ul("b", b, 0, 7.9)
+        kwargs["h"] = checks.check_ul("h", h, 0, 24)
 
         self.inputs = self.model_args(kwargs)
-        kwargs['skips'] = kwargs['skips'] + list(kwargs.keys())
+        kwargs["skips"] = kwargs["skips"] + list(kwargs.keys())
 
-        kwargs['Cv'] = self._Cv(**kwargs)
-        kwargs['Cm']   = self._Cm(**kwargs)
-        kwargs['PDR'] = exposures.potential_dose_rate(**kwargs)
-        kwargs['NW']   = exposures.workers_exposed(**kwargs)
-        kwargs['LADD'] = exposures.daily_dose(t=kwargs['ATc'], **kwargs)
-        kwargs['ADD']  = exposures.daily_dose(t=kwargs['AT'], **kwargs)
-        kwargs['APDR'] = exposures.acute_potential_dose_rate(**kwargs)
+        kwargs["Cv"] = self._Cv(**kwargs)
+        kwargs["Cm"] = self._Cm(**kwargs)
+        kwargs["PDR"] = exposures.potential_dose_rate(**kwargs)
+        kwargs["NW"] = exposures.workers_exposed(**kwargs)
+        kwargs["LADD"] = exposures.daily_dose(t=kwargs["ATc"], **kwargs)
+        kwargs["ADD"] = exposures.daily_dose(t=kwargs["AT"], **kwargs)
+        kwargs["APDR"] = exposures.acute_potential_dose_rate(**kwargs)
 
         self.outputs = self.model_args(kwargs)
-        self.outputs['I'] = self.outputs.pop('PDR')
+        self.outputs["I"] = self.outputs.pop("PDR")
         return
 
     def _Cv(self, Cvk, VP, Ys, MW, VPpel, Ypel, MWpel, X, **kwargs):
-        return min((Cvk * (VP * Ys / MW) / (VPpel * Ypel / MWpel)),
-                   (1000000 * X * VP / 760))
+        return min(
+            (Cvk * (VP * Ys / MW) / (VPpel * Ypel / MWpel)), (1000000 * X * VP / 760)
+        )
 
-    def _Cm(self,Cv, MW, Vm, **kwargs):
+    def _Cm(self, Cv, MW, Vm, **kwargs):
         return Cv * MW / Vm
 
     @classmethod
     def get_scenarios(self):
-        return ['user']
+        return ["user"]
 
 
-class total_pnor_pel_limiting(inhalation_model):
+class TotalPNORPELLimiting(Inhalation):
     """
     Class for ChemSTEER's OSHA Total PNOR PEL-limiting Inhalation Exposure Model
     """
-    def __init__(self, Ys, scenario='user', KCk=15, b=1.25, h=8,
-                 ED=1, NWexp=1, NS=1, EY=40, BW=70, ATc=70, AT=40):
+
+    def __init__(
+        self,
+        Ys,
+        scenario="user",
+        KCk=15,
+        b=1.25,
+        h=8,
+        ED=1,
+        NWexp=1,
+        NS=1,
+        EY=40,
+        BW=70,
+        ATc=70,
+        AT=40,
+    ):
         """
         Required Arguments:
         ------------------
@@ -561,9 +671,10 @@ class total_pnor_pel_limiting(inhalation_model):
         outputs: dictionary, all calculated exposure values from ChemSTEER model;
                  {output name: output value}
         """
-        kwargs = inhalation_model.__init__(self, ED=ED, NWexp=NWexp, NS=NS,
-                                           EY=EY, BW=BW, ATc=ATc, AT=AT)
-        self.model_name = 'OSHA Total PNOR PEL-limiting'
+        kwargs = Inhalation.__init__(
+            self, ED=ED, NWexp=NWexp, NS=NS, EY=EY, BW=BW, ATc=ATc, AT=AT
+        )
+        self.model_name = "OSHA Total PNOR PEL-limiting"
         self.equations = """
                          Cm   = KCk * Ys
                          I    = Cm * b * h
@@ -572,49 +683,67 @@ class total_pnor_pel_limiting(inhalation_model):
                          ADD  = (I * ED * EY) / (BW * AT * days_per_year)
                          APDR = I / BW
                          """
-        self.scenario = str(scenario).lower().replace(", ",",")
+        self.scenario = str(scenario).lower().replace(", ", ",")
         if scenario not in self.get_scenarios():
-            raise ScenarioException("Error! Invalid value for class argument 'scenario' ("
-                                    + str(self.scenario)+"). Options are '"
-                                    + "', '".join(self.get_scenarios()) + "'.")
+            raise checks.ScenarioException(
+                "Error! Invalid value for class argument 'scenario' ("
+                + str(self.scenario)
+                + "). Options are '"
+                + "', '".join(self.get_scenarios())
+                + "'."
+            )
 
-        kwargs['route'] = self.route
+        kwargs["route"] = self.route
 
-        kwargs['KCk'] = KCk
-        kwargs['Ys'] = checks.check_ul('Ys',Ys,0,1)
-        kwargs['b'] = checks.check_ul('b',b,0,7.9)
-        kwargs['h'] = checks.check_ul('h',h,0,24)
+        kwargs["KCk"] = KCk
+        kwargs["Ys"] = checks.check_ul("Ys", Ys, 0, 1)
+        kwargs["b"] = checks.check_ul("b", b, 0, 7.9)
+        kwargs["h"] = checks.check_ul("h", h, 0, 24)
 
         self.inputs = self.model_args(kwargs)
-        kwargs['skips'] = kwargs['skips'] + list(kwargs.keys())
+        kwargs["skips"] = kwargs["skips"] + list(kwargs.keys())
         # for k,v in kwargs.items():
         #     print(k,v)
-        kwargs['Cm'] = self._Cm(**kwargs)
-        kwargs['PDR'] = exposures.potential_dose_rate(**kwargs)
-        kwargs['NW'] = exposures.workers_exposed(**kwargs)
-        kwargs['LADD'] = exposures.daily_dose(t=kwargs['ATc'], **kwargs)
-        kwargs['ADD'] = exposures.daily_dose(t=kwargs['AT'], **kwargs)
-        kwargs['APDR'] = exposures.acute_potential_dose_rate(**kwargs)
+        kwargs["Cm"] = self._Cm(**kwargs)
+        kwargs["PDR"] = exposures.potential_dose_rate(**kwargs)
+        kwargs["NW"] = exposures.workers_exposed(**kwargs)
+        kwargs["LADD"] = exposures.daily_dose(t=kwargs["ATc"], **kwargs)
+        kwargs["ADD"] = exposures.daily_dose(t=kwargs["AT"], **kwargs)
+        kwargs["APDR"] = exposures.acute_potential_dose_rate(**kwargs)
 
         self.outputs = self.model_args(kwargs)
-        self.outputs['I'] = self.outputs.pop('PDR')
+        self.outputs["I"] = self.outputs.pop("PDR")
 
         return
 
-    def _Cm(self,KCk, Ys, **kwargs):
+    def _Cm(self, KCk, Ys, **kwargs):
         return KCk * Ys
 
     @classmethod
     def get_scenarios(self):
-        return ['user']
+        return ["user"]
 
 
-class respirable_pnor_pel_limiting(inhalation_model):
+class RespirablePNORPELLimiting(Inhalation):
     """
     Class for ChemSTEER's OSHA Respirable PNOR PEL-limiting Inhalation Exposure Model
     """
-    def __init__(self, Ys, scenario='user', KCk=5, b=1.25, h=8,
-                 ED=1, NWexp=1, NS=1, EY=40, BW=70, ATc=70, AT=40):
+
+    def __init__(
+        self,
+        Ys,
+        scenario="user",
+        KCk=5,
+        b=1.25,
+        h=8,
+        ED=1,
+        NWexp=1,
+        NS=1,
+        EY=40,
+        BW=70,
+        ATc=70,
+        AT=40,
+    ):
         """
         Required Arguments:
         ------------------
@@ -661,9 +790,10 @@ class respirable_pnor_pel_limiting(inhalation_model):
         outputs: dictionary, all calculated exposure values from ChemSTEER model;
                  {output name: output value}
         """
-        kwargs = inhalation_model.__init__(self, ED=ED, NWexp=NWexp, NS=NS,
-                                           EY=EY, BW=BW, ATc=ATc, AT=AT)
-        self.model_name = 'OSHA Respirable PNOR PEL-limiting'
+        kwargs = Inhalation.__init__(
+            self, ED=ED, NWexp=NWexp, NS=NS, EY=EY, BW=BW, ATc=ATc, AT=AT
+        )
+        self.model_name = "OSHA Respirable PNOR PEL-limiting"
         self.equations = """
                          Cm   = KCk * Ys
                          I    = Cm * b * h
@@ -672,31 +802,35 @@ class respirable_pnor_pel_limiting(inhalation_model):
                          ADD  = (I * ED * EY) / (BW * AT * days_per_year)
                          APDR = I / BW
                          """
-        self.scenario = str(scenario).lower().replace(", ",",")
+        self.scenario = str(scenario).lower().replace(", ", ",")
         if scenario not in self.get_scenarios():
-            raise ScenarioException("Error! Invalid value for class argument 'scenario' ("
-                                    + str(self.scenario)+"). Options are '"
-                                    + "', '".join(self.get_scenarios()) + "'.")
+            raise checks.ScenarioException(
+                "Error! Invalid value for class argument 'scenario' ("
+                + str(self.scenario)
+                + "). Options are '"
+                + "', '".join(self.get_scenarios())
+                + "'."
+            )
 
-        kwargs['route'] = self.route
+        kwargs["route"] = self.route
 
-        kwargs['KCk'] = KCk
-        kwargs['Ys'] = checks.check_ul('Ys',Ys,0,1)
-        kwargs['b'] = checks.check_ul('b',b,0,7.9)
-        kwargs['h'] = checks.check_ul('h',h,0,24)
+        kwargs["KCk"] = KCk
+        kwargs["Ys"] = checks.check_ul("Ys", Ys, 0, 1)
+        kwargs["b"] = checks.check_ul("b", b, 0, 7.9)
+        kwargs["h"] = checks.check_ul("h", h, 0, 24)
 
         self.inputs = self.model_args(kwargs)
-        kwargs['skips'] = kwargs['skips'] + list(kwargs.keys())
+        kwargs["skips"] = kwargs["skips"] + list(kwargs.keys())
 
-        kwargs['Cm'] = self._Cm(**kwargs)
-        kwargs['PDR'] = exposures.potential_dose_rate(**kwargs)
-        kwargs['NW'] = exposures.workers_exposed(**kwargs)
-        kwargs['LADD'] = exposures.daily_dose(t=kwargs['ATc'], **kwargs)
-        kwargs['ADD'] = exposures.daily_dose(t=kwargs['AT'], **kwargs)
-        kwargs['APDR'] = exposures.acute_potential_dose_rate(**kwargs)
+        kwargs["Cm"] = self._Cm(**kwargs)
+        kwargs["PDR"] = exposures.potential_dose_rate(**kwargs)
+        kwargs["NW"] = exposures.workers_exposed(**kwargs)
+        kwargs["LADD"] = exposures.daily_dose(t=kwargs["ATc"], **kwargs)
+        kwargs["ADD"] = exposures.daily_dose(t=kwargs["AT"], **kwargs)
+        kwargs["APDR"] = exposures.acute_potential_dose_rate(**kwargs)
 
         self.outputs = self.model_args(kwargs)
-        self.outputs['I'] = self.outputs.pop('PDR')
+        self.outputs["I"] = self.outputs.pop("PDR")
 
         return
 
@@ -705,15 +839,31 @@ class respirable_pnor_pel_limiting(inhalation_model):
 
     @classmethod
     def get_scenarios(self):
-        return ['user']
+        return ["user"]
 
 
-class automobile_oem_spray_coating(inhalation_model):
+class AutomobileOEMSprayCoating(Inhalation):
     """
     Class for ChemSTEER's EPA-OPPT automobile OEM Spray Coating Inhalation Exposure Model
     """
-    def __init__(self, Ymist, scenario='conventional,downdraft', KCk=2.3, Ys=None,
-                 Ysf=0.25, b=1.25, h=8, ED=1, NWexp=17, NS=1, EY=40, BW=70, ATc=70, AT=40):
+
+    def __init__(
+        self,
+        Ymist,
+        scenario="conventional,downdraft",
+        KCk=2.3,
+        Ys=None,
+        Ysf=0.25,
+        b=1.25,
+        h=8,
+        ED=1,
+        NWexp=17,
+        NS=1,
+        EY=40,
+        BW=70,
+        ATc=70,
+        AT=40,
+    ):
         """
         Required Arguments:
         ------------------
@@ -765,9 +915,10 @@ class automobile_oem_spray_coating(inhalation_model):
         outputs: dictionary, all calculated exposure values from ChemSTEER model;
                  {output name: output value}
         """
-        kwargs = inhalation_model.__init__(self, ED=ED, NWexp=NWexp, NS=NS,
-                                           EY=EY, BW=BW, ATc=ATc, AT=AT)
-        self.model_name = 'EPA-OPPT automobile OEM Spray Coating'
+        kwargs = Inhalation.__init__(
+            self, ED=ED, NWexp=NWexp, NS=NS, EY=EY, BW=BW, ATc=ATc, AT=AT
+        )
+        self.model_name = "EPA-OPPT automobile OEM Spray Coating"
         self.equations = """
                          Cm = KCk * Ys
                          I = Cm * b * h
@@ -776,48 +927,54 @@ class automobile_oem_spray_coating(inhalation_model):
                          ADD = (I * ED * EY) / (BW * AT * days_per_year)
                          APDR = I / BW
                          """
-        self.scenario = str(scenario).lower().replace(", ",",")
-        if (self.scenario not in self.get_scenarios()):
-            raise ScenarioException("Error! Invalid value for class argument 'scenario' ("
-                                    + str(self.scenario)+"). Options are '"
-                                    + "', '".join(self.get_scenarios()) + "'.")
+        self.scenario = str(scenario).lower().replace(", ", ",")
+        if self.scenario not in self.get_scenarios():
+            raise checks.ScenarioException(
+                "Error! Invalid value for class argument 'scenario' ("
+                + str(self.scenario)
+                + "). Options are '"
+                + "', '".join(self.get_scenarios())
+                + "'."
+            )
 
-        kwargs['route'] = self.route
+        kwargs["route"] = self.route
 
-        if (self.scenario == "conventional,downdraft"):
-            kwargs['KCk'] = 2.3
-        elif (self.scenario == "conventional,crossdraft"):
-            kwargs['KCk'] = 15
-        elif (self.scenario == "hvlp,downdraft"):
-            kwargs['KCk'] = 1.9
-        elif (self.scenario == "hvlp,crossdraft"):
-            kwargs['KCk'] = 15
-        elif (self.scenario == "user"):
-            kwargs['KCk'] = KCk
+        if self.scenario == "conventional,downdraft":
+            kwargs["KCk"] = 2.3
+        elif self.scenario == "conventional,crossdraft":
+            kwargs["KCk"] = 15
+        elif self.scenario == "hvlp,downdraft":
+            kwargs["KCk"] = 1.9
+        elif self.scenario == "hvlp,crossdraft":
+            kwargs["KCk"] = 15
+        elif self.scenario == "user":
+            kwargs["KCk"] = KCk
 
-        kwargs['Ymist'] = checks.check_ul('Ymist',Ymist,0,1)
-        kwargs['Ysf'] = checks.check_ul('Ysf',Ysf,0,1)
+        kwargs["Ymist"] = checks.check_ul("Ymist", Ymist, 0, 1)
+        kwargs["Ysf"] = checks.check_ul("Ysf", Ysf, 0, 1)
 
-        if Ys == None:
-            kwargs['Ys'] = checks.check_ul('Ys',min((kwargs['Ymist']/kwargs['Ysf']), 1),0,1)
+        if Ys is None:
+            kwargs["Ys"] = checks.check_ul(
+                "Ys", min((kwargs["Ymist"] / kwargs["Ysf"]), 1), 0, 1
+            )
         else:
-            kwargs['Ys'] = checks.check_ul('Ys',Ys,0,1)
+            kwargs["Ys"] = checks.check_ul("Ys", Ys, 0, 1)
 
-        kwargs['b'] = checks.check_ul('b',b,0,7.9)
-        kwargs['h'] = checks.check_ul('h',h,0,24)
+        kwargs["b"] = checks.check_ul("b", b, 0, 7.9)
+        kwargs["h"] = checks.check_ul("h", h, 0, 24)
 
         self.inputs = self.model_args(kwargs)
-        kwargs['skips'] = kwargs['skips'] + list(kwargs.keys())
+        kwargs["skips"] = kwargs["skips"] + list(kwargs.keys())
 
-        kwargs['Cm'] = self._Cm(**kwargs)
-        kwargs['PDR'] = exposures.potential_dose_rate(**kwargs)
-        kwargs['NW'] = exposures.workers_exposed(**kwargs)
-        kwargs['LADD'] = exposures.daily_dose(t=kwargs['ATc'], **kwargs)
-        kwargs['ADD'] =   exposures.daily_dose(t=kwargs['AT'], **kwargs)
-        kwargs['APDR'] = exposures.acute_potential_dose_rate(**kwargs)
+        kwargs["Cm"] = self._Cm(**kwargs)
+        kwargs["PDR"] = exposures.potential_dose_rate(**kwargs)
+        kwargs["NW"] = exposures.workers_exposed(**kwargs)
+        kwargs["LADD"] = exposures.daily_dose(t=kwargs["ATc"], **kwargs)
+        kwargs["ADD"] = exposures.daily_dose(t=kwargs["AT"], **kwargs)
+        kwargs["APDR"] = exposures.acute_potential_dose_rate(**kwargs)
 
         self.outputs = self.model_args(kwargs)
-        self.outputs['I'] = self.outputs.pop('PDR')
+        self.outputs["I"] = self.outputs.pop("PDR")
 
         return
 
@@ -826,16 +983,37 @@ class automobile_oem_spray_coating(inhalation_model):
 
     @classmethod
     def get_scenarios(self):
-        return ['conventional,downdraft', 'conventional,crossdraft',
-                'hvlp,downdraft', 'hvlp,crossdraft', 'user']
+        return [
+            "conventional,downdraft",
+            "conventional,crossdraft",
+            "hvlp,downdraft",
+            "hvlp,crossdraft",
+            "user",
+        ]
 
 
-class automobile_refinish_spray_coating(inhalation_model):
+class AutomobileRefinishSprayCoating(Inhalation):
     """
     Class for ChemSTEER's EPA-OPPT Automobile Refinish Spray Coating Inhalation Exposure Model
     """
-    def __init__(self, Ymist, scenario="conventional,crossdraft", Ys=None, KCk=15,
-                 Ysf=0.25, b=1.25, h=8, ED=1, NWexp=3, NS=1, EY=40, BW=70, ATc=70, AT=40):
+
+    def __init__(
+        self,
+        Ymist,
+        scenario="conventional,crossdraft",
+        Ys=None,
+        KCk=15,
+        Ysf=0.25,
+        b=1.25,
+        h=8,
+        ED=1,
+        NWexp=3,
+        NS=1,
+        EY=40,
+        BW=70,
+        ATc=70,
+        AT=40,
+    ):
         """
         Required Arguments:
         ------------------
@@ -887,9 +1065,10 @@ class automobile_refinish_spray_coating(inhalation_model):
         outputs: dictionary, all calculated exposure values from ChemSTEER model;
                  {output name: output value}
         """
-        kwargs = inhalation_model.__init__(self, ED=ED, NWexp=NWexp, NS=NS,
-                                           EY=EY, BW=BW, ATc=ATc, AT=AT)
-        self.model_name = 'EPA-OPPT Automobile Refinish Spray Coating'
+        kwargs = Inhalation.__init__(
+            self, ED=ED, NWexp=NWexp, NS=NS, EY=EY, BW=BW, ATc=ATc, AT=AT
+        )
+        self.model_name = "EPA-OPPT Automobile Refinish Spray Coating"
         self.equations = """
                          Cm = KCk * Ys
                          I = Cm * b * h
@@ -898,66 +1077,89 @@ class automobile_refinish_spray_coating(inhalation_model):
                          ADD = (I * ED * EY) / (BW * AT * days_per_year)
                          APDR = I / BW
                          """
-        self.scenario = str(scenario).lower().replace(", ",",")
-        if (self.scenario not in self.get_scenarios()):
-            raise ScenarioException("Error! Invalid value for class argument 'scenario' ("
-                                    + str(self.scenario)+"). Options are '"
-                                    + "', '".join(self.get_scenarios()) + "'.")
-        kwargs['route'] = self.route
+        self.scenario = str(scenario).lower().replace(", ", ",")
+        if self.scenario not in self.get_scenarios():
+            raise checks.ScenarioException(
+                "Error! Invalid value for class argument 'scenario' ("
+                + str(self.scenario)
+                + "). Options are '"
+                + "', '".join(self.get_scenarios())
+                + "'."
+            )
+        kwargs["route"] = self.route
 
-        if (self.scenario == "conventional,downdraft"):
-            kwargs['KCk'] = 2.3
-        elif (self.scenario == "conventional,crossdraft"):
-            kwargs['KCk'] = 15
-        elif (self.scenario == "hvlp,downdraft"):
-            kwargs['KCk'] = 1.9
-        elif (self.scenario == "hvlp,crossdraft"):
-            kwargs['KCk'] = 15
-        elif (self.scenario == "user"):
-            kwargs['KCk'] = KCk
+        if self.scenario == "conventional,downdraft":
+            kwargs["KCk"] = 2.3
+        elif self.scenario == "conventional,crossdraft":
+            kwargs["KCk"] = 15
+        elif self.scenario == "hvlp,downdraft":
+            kwargs["KCk"] = 1.9
+        elif self.scenario == "hvlp,crossdraft":
+            kwargs["KCk"] = 15
+        elif self.scenario == "user":
+            kwargs["KCk"] = KCk
 
+        kwargs["Ymist"] = checks.check_ul("Ymist", Ymist, 0, 1)
+        kwargs["Ysf"] = checks.check_ul("Ysf", Ysf, 0, 1)
 
-        kwargs['Ymist'] = checks.check_ul('Ymist',Ymist,0,1)
-        kwargs['Ysf'] = checks.check_ul('Ysf',Ysf,0,1)
-
-        if Ys == None:
-            kwargs['Ys'] = checks.check_ul('Ys',min((kwargs['Ymist']/kwargs['Ysf']), 1),0,1)
+        if Ys is None:
+            kwargs["Ys"] = checks.check_ul(
+                "Ys", min((kwargs["Ymist"] / kwargs["Ysf"]), 1), 0, 1
+            )
         else:
-            kwargs['Ys'] = checks.check_ul('Ys',Ys,0,1)
+            kwargs["Ys"] = checks.check_ul("Ys", Ys, 0, 1)
 
-        kwargs['b'] = checks.check_ul('b',b,0,7.9)
-        kwargs['h'] = checks.check_ul('h',h,0,24)
+        kwargs["b"] = checks.check_ul("b", b, 0, 7.9)
+        kwargs["h"] = checks.check_ul("h", h, 0, 24)
 
         self.inputs = self.model_args(kwargs)
-        kwargs['skips'] = kwargs['skips'] + list(kwargs.keys())
+        kwargs["skips"] = kwargs["skips"] + list(kwargs.keys())
 
-        kwargs['Cm'] = self._Cm(**kwargs)
-        kwargs['PDR'] = exposures.potential_dose_rate(**kwargs)
-        kwargs['NW'] = exposures.workers_exposed(**kwargs)
-        kwargs['LADD'] = exposures.daily_dose(t=kwargs['ATc'], **kwargs)
-        kwargs['ADD'] = exposures.daily_dose(t=kwargs['AT'], **kwargs)
-        kwargs['APDR'] = exposures.acute_potential_dose_rate(**kwargs)
+        kwargs["Cm"] = self._Cm(**kwargs)
+        kwargs["PDR"] = exposures.potential_dose_rate(**kwargs)
+        kwargs["NW"] = exposures.workers_exposed(**kwargs)
+        kwargs["LADD"] = exposures.daily_dose(t=kwargs["ATc"], **kwargs)
+        kwargs["ADD"] = exposures.daily_dose(t=kwargs["AT"], **kwargs)
+        kwargs["APDR"] = exposures.acute_potential_dose_rate(**kwargs)
 
         self.outputs = self.model_args(kwargs)
-        self.outputs['I'] = self.outputs.pop('PDR')
+        self.outputs["I"] = self.outputs.pop("PDR")
 
         return
 
-    def _Cm(self,KCk, Ys, **kwargs):
+    def _Cm(self, KCk, Ys, **kwargs):
         return KCk * Ys
 
     @classmethod
     def get_scenarios(self):
-        return ['conventional,downdraft', 'conventional,crossdraft',
-                'hvlp,downdraft', 'hvlp,crossdraft', 'user']
+        return [
+            "conventional,downdraft",
+            "conventional,crossdraft",
+            "hvlp,downdraft",
+            "hvlp,crossdraft",
+            "user",
+        ]
 
 
-class automobile_spray_coating(inhalation_model):
+class AutomobileSprayCoating(Inhalation):
     """
     Class for ChemSTEER's EPA-OPPT Automobile Spray Coating Inhalation Exposure Model
     """
-    def __init__(self, scenario='high,conventional,crossdraft', KCk=18.4, b=1.25, h=8,
-                 ED=1, NWexp=3, NS=1, EY=40, BW=70, ATc=70, AT=40):
+
+    def __init__(
+        self,
+        scenario="high,conventional,crossdraft",
+        KCk=18.4,
+        b=1.25,
+        h=8,
+        ED=1,
+        NWexp=3,
+        NS=1,
+        EY=40,
+        BW=70,
+        ATc=70,
+        AT=40,
+    ):
         """
         Required Arguments:
         ------------------
@@ -1006,9 +1208,10 @@ class automobile_spray_coating(inhalation_model):
         outputs: dictionary, all calculated exposure values from ChemSTEER model;
                  {output name: output value}
         """
-        kwargs = inhalation_model.__init__(self, ED=ED, NWexp=NWexp, NS=NS,
-                                           EY=EY, BW=BW, ATc=ATc, AT=AT)
-        self.model_name = 'EPA-OPPT Automobile Spray Coating'
+        kwargs = Inhalation.__init__(
+            self, ED=ED, NWexp=NWexp, NS=NS, EY=EY, BW=BW, ATc=ATc, AT=AT
+        )
+        self.model_name = "EPA-OPPT Automobile Spray Coating"
         self.equations = """
                          Cm = KCk
                          I = Cm * b * h
@@ -1017,47 +1220,51 @@ class automobile_spray_coating(inhalation_model):
                          ADD = (I * ED * EY) / (BW * AT * days_per_year)
                          APDR = I / BW
                          """
-        self.scenario = str(scenario).lower().replace(", ",",")
-        if (self.scenario not in self.get_scenarios()):
-            raise ScenarioException("Error! Invalid value for class argument 'scenario' ("
-                                    + str(self.scenario)+"). Options are '"
-                                    + "', '".join(self.get_scenarios()) + "'.")
-        kwargs['route'] = self.route
+        self.scenario = str(scenario).lower().replace(", ", ",")
+        if self.scenario not in self.get_scenarios():
+            raise checks.ScenarioException(
+                "Error! Invalid value for class argument 'scenario' ("
+                + str(self.scenario)
+                + "). Options are '"
+                + "', '".join(self.get_scenarios())
+                + "'."
+            )
+        kwargs["route"] = self.route
 
-        if (self.scenario == "low,conventional,crossdraft"):
-            kwargs['KCk'] = 0.05
-        elif (self.scenario == "high,conventional,crossdraft"):
-            kwargs['KCk'] = 18.4
-        elif (self.scenario == "low,conventional,downdraft"):
-            kwargs['KCk'] = 0.01
-        elif (self.scenario == "high,conventional,downdraft"):
-            kwargs['KCk'] = 3.7
-        elif (self.scenario == "low,hvlp,crossdraft"):
-            kwargs['KCk'] = 1.0
-        elif (self.scenario == "high,hvlp,crossdraft"):
-            kwargs['KCk'] = 5.2
-        elif (self.scenario == "low,hvlp,downdraft"):
-            kwargs['KCk'] = 0.6
-        elif (self.scenario == "high,hvlp,downdraft"):
-            kwargs['KCk'] = 1.4
-        elif (self.scenario == "user"):
-            kwargs['KCk'] = KCk
+        if self.scenario == "low,conventional,crossdraft":
+            kwargs["KCk"] = 0.05
+        elif self.scenario == "high,conventional,crossdraft":
+            kwargs["KCk"] = 18.4
+        elif self.scenario == "low,conventional,downdraft":
+            kwargs["KCk"] = 0.01
+        elif self.scenario == "high,conventional,downdraft":
+            kwargs["KCk"] = 3.7
+        elif self.scenario == "low,hvlp,crossdraft":
+            kwargs["KCk"] = 1.0
+        elif self.scenario == "high,hvlp,crossdraft":
+            kwargs["KCk"] = 5.2
+        elif self.scenario == "low,hvlp,downdraft":
+            kwargs["KCk"] = 0.6
+        elif self.scenario == "high,hvlp,downdraft":
+            kwargs["KCk"] = 1.4
+        elif self.scenario == "user":
+            kwargs["KCk"] = KCk
 
-        kwargs['b'] = b
-        kwargs['h'] = h
+        kwargs["b"] = b
+        kwargs["h"] = h
 
         self.inputs = self.model_args(kwargs)
-        kwargs['skips'] = kwargs['skips'] + list(kwargs.keys())
+        kwargs["skips"] = kwargs["skips"] + list(kwargs.keys())
 
-        kwargs['Cm'] = self._Cm(**kwargs)
-        kwargs['PDR'] = exposures.potential_dose_rate(**kwargs)
-        kwargs['NW'] = exposures.workers_exposed(**kwargs)
-        kwargs['LADD'] = exposures.daily_dose(t=kwargs['ATc'], **kwargs)
-        kwargs['ADD'] = exposures.daily_dose(t=kwargs['AT'], **kwargs)
-        kwargs['APDR'] = exposures.acute_potential_dose_rate(**kwargs)
+        kwargs["Cm"] = self._Cm(**kwargs)
+        kwargs["PDR"] = exposures.potential_dose_rate(**kwargs)
+        kwargs["NW"] = exposures.workers_exposed(**kwargs)
+        kwargs["LADD"] = exposures.daily_dose(t=kwargs["ATc"], **kwargs)
+        kwargs["ADD"] = exposures.daily_dose(t=kwargs["AT"], **kwargs)
+        kwargs["APDR"] = exposures.acute_potential_dose_rate(**kwargs)
 
         self.outputs = self.model_args(kwargs)
-        self.outputs['I'] = self.outputs.pop('PDR')
+        self.outputs["I"] = self.outputs.pop("PDR")
 
         return
 
@@ -1066,17 +1273,40 @@ class automobile_spray_coating(inhalation_model):
 
     @classmethod
     def get_scenarios(self):
-        return ['low,conventional,crossdraft', 'high,conventional,crossdraft',
-                'low,conventional,downdraft', 'high,conventional,downdraft',
-                'low,hvlp,crossdraft', 'high,hvlp,crossdraft',
-                'low,hvlp,downdraft', 'high,hvlp,downdraft']
+        return [
+            "low,conventional,crossdraft",
+            "high,conventional,crossdraft",
+            "low,conventional,downdraft",
+            "high,conventional,downdraft",
+            "low,hvlp,crossdraft",
+            "high,hvlp,crossdraft",
+            "low,hvlp,downdraft",
+            "high,hvlp,downdraft",
+        ]
 
-class uv_roll_coating(inhalation_model):
+
+class UVRollCoating(Inhalation):
     """
     Class for ChemSTEER's EPA-OPPT UV Roll Coating Inhalation Exposure Model
     """
-    def __init__(self, Ymist, scenario='high end of range', KCk=0.26, Ys=None, Ysf=0.25,
-                 b=1.25, h=8, ED=1, NWexp=1, NS=1, EY=40, BW=70, ATc=70, AT=40):
+
+    def __init__(
+        self,
+        Ymist,
+        scenario="high end of range",
+        KCk=0.26,
+        Ys=None,
+        Ysf=0.25,
+        b=1.25,
+        h=8,
+        ED=1,
+        NWexp=1,
+        NS=1,
+        EY=40,
+        BW=70,
+        ATc=70,
+        AT=40,
+    ):
         """
         Required Arguments:
         ------------------
@@ -1128,9 +1358,10 @@ class uv_roll_coating(inhalation_model):
         outputs: dictionary, all calculated exposure values from ChemSTEER model;
                  {output name: output value}
         """
-        kwargs = inhalation_model.__init__(self, ED=ED, NWexp=NWexp, NS=NS,
-                                           EY=EY, BW=BW, ATc=ATc, AT=AT)
-        self.model_name = 'EPA-OPPT UV Roll Coating'
+        kwargs = Inhalation.__init__(
+            self, ED=ED, NWexp=NWexp, NS=NS, EY=EY, BW=BW, ATc=ATc, AT=AT
+        )
+        self.model_name = "EPA-OPPT UV Roll Coating"
         self.equations = """
                          Cm = KCk * Ys
                          I = Cm * b * h
@@ -1139,43 +1370,49 @@ class uv_roll_coating(inhalation_model):
                          ADD = (I * ED * EY) / (BW * AT * days_per_year)
                          APDR = I / BW
                          """
-        self.scenario = str(scenario).lower().replace(", ",",")
-        if (self.scenario not in self.get_scenarios()):
-            raise ScenarioException("Error! Invalid value for class argument 'scenario' ("
-                                    + str(self.scenario)+"). Options are '"
-                                    + "', '".join(self.get_scenarios()) + "'.")
+        self.scenario = str(scenario).lower().replace(", ", ",")
+        if self.scenario not in self.get_scenarios():
+            raise checks.ScenarioException(
+                "Error! Invalid value for class argument 'scenario' ("
+                + str(self.scenario)
+                + "). Options are '"
+                + "', '".join(self.get_scenarios())
+                + "'."
+            )
 
-        kwargs['route'] = self.route
-        if (self.scenario == "low end of range"):
-            kwargs['KCk'] = 0.04
-        elif (self.scenario == "high end of range"):
-            kwargs['KCk'] = 0.26
-        elif (self.scenario == "user"):
-            kwargs['KCk'] = KCk
+        kwargs["route"] = self.route
+        if self.scenario == "low end of range":
+            kwargs["KCk"] = 0.04
+        elif self.scenario == "high end of range":
+            kwargs["KCk"] = 0.26
+        elif self.scenario == "user":
+            kwargs["KCk"] = KCk
 
-        kwargs['Ymist'] = checks.check_ul('Ymist',Ymist,0,1)
-        kwargs['Ysf'] = checks.check_ul('Ysf',Ysf,0,1)
+        kwargs["Ymist"] = checks.check_ul("Ymist", Ymist, 0, 1)
+        kwargs["Ysf"] = checks.check_ul("Ysf", Ysf, 0, 1)
 
-        if Ys == None:
-            kwargs['Ys'] = checks.check_ul('Ys',min((kwargs['Ymist']/kwargs['Ysf']), 1),0,1)
+        if Ys is None:
+            kwargs["Ys"] = checks.check_ul(
+                "Ys", min((kwargs["Ymist"] / kwargs["Ysf"]), 1), 0, 1
+            )
         else:
-            kwargs['Ys'] = checks.check_ul('Ys',Ys,0,1)
+            kwargs["Ys"] = checks.check_ul("Ys", Ys, 0, 1)
 
-        kwargs['b'] = checks.check_ul('b',b,0,7.9)
-        kwargs['h'] = checks.check_ul('h',h,0,24)
+        kwargs["b"] = checks.check_ul("b", b, 0, 7.9)
+        kwargs["h"] = checks.check_ul("h", h, 0, 24)
 
         self.inputs = self.model_args(kwargs)
-        kwargs['skips'] = kwargs['skips'] + list(kwargs.keys())
+        kwargs["skips"] = kwargs["skips"] + list(kwargs.keys())
 
-        kwargs['Cm'] = self._Cm(**kwargs)
-        kwargs['PDR'] = exposures.potential_dose_rate(**kwargs)
-        kwargs['NW'] = exposures.workers_exposed(**kwargs)
-        kwargs['LADD'] = exposures.daily_dose(t=kwargs['ATc'], **kwargs)
-        kwargs['ADD'] = exposures.daily_dose(t=kwargs['AT'], **kwargs)
-        kwargs['APDR'] = exposures.acute_potential_dose_rate(**kwargs)
+        kwargs["Cm"] = self._Cm(**kwargs)
+        kwargs["PDR"] = exposures.potential_dose_rate(**kwargs)
+        kwargs["NW"] = exposures.workers_exposed(**kwargs)
+        kwargs["LADD"] = exposures.daily_dose(t=kwargs["ATc"], **kwargs)
+        kwargs["ADD"] = exposures.daily_dose(t=kwargs["AT"], **kwargs)
+        kwargs["APDR"] = exposures.acute_potential_dose_rate(**kwargs)
 
         self.outputs = self.model_args(kwargs)
-        self.outputs['I'] = self.outputs.pop('PDR')
+        self.outputs["I"] = self.outputs.pop("PDR")
 
         return
 
@@ -1184,15 +1421,32 @@ class uv_roll_coating(inhalation_model):
 
     @classmethod
     def get_scenarios(self):
-        return ['low end of range', 'high end of range']
+        return ["low end of range", "high end of range"]
 
 
-class user_defined_inhalation(inhalation_model):
+class UserDefinedInhalation(Inhalation):
     """
     Class for ChemSTEER's User-defined Inhalation Exposure Model
     """
-    def __init__(self, Cv, MW, h, scenario='user', Cm=None, Vm=24.45, Ys=1, b=1.25,
-                 ED=1, NWexp=1, NS=1, EY=40, BW=70, ATc=70, AT=40):
+
+    def __init__(
+        self,
+        Cv,
+        MW,
+        h,
+        scenario="user",
+        Cm=None,
+        Vm=24.45,
+        Ys=1,
+        b=1.25,
+        ED=1,
+        NWexp=1,
+        NS=1,
+        EY=40,
+        BW=70,
+        ATc=70,
+        AT=40,
+    ):
         """
         Required Arguments:
         ------------------
@@ -1246,9 +1500,10 @@ class user_defined_inhalation(inhalation_model):
                         additional `user` option has been added for full flexible use of
                         the model
         """
-        kwargs = inhalation_model.__init__(self, ED=ED, NWexp=NWexp, NS=NS,
-                                           EY=EY, BW=BW, ATc=ATc, AT=AT)
-        self.model_name = 'User-defined Inhalation'
+        kwargs = Inhalation.__init__(
+            self, ED=ED, NWexp=NWexp, NS=NS, EY=EY, BW=BW, ATc=ATc, AT=AT
+        )
+        self.model_name = "User-defined Inhalation"
         self.equations = """
                          Cm = Cv * MW / Vm * Ys
                          I = Cm * b * h
@@ -1257,40 +1512,44 @@ class user_defined_inhalation(inhalation_model):
                          ADD = (I * ED * EY) / (BW * AT * days_per_year)
                          APDR = I / BW
                          """
-        self.scenario = str(scenario).lower().replace(", ",",")
+        self.scenario = str(scenario).lower().replace(", ", ",")
         if scenario not in self.get_scenarios():
-            raise ScenarioException("Error! Invalid value for class argument 'scenario' ("
-                                    + str(self.scenario)+"). Options are '"
-                                    + "', '".join(self.get_scenarios()) + "'.")
+            raise checks.ScenarioException(
+                "Error! Invalid value for class argument 'scenario' ("
+                + str(self.scenario)
+                + "). Options are '"
+                + "', '".join(self.get_scenarios())
+                + "'."
+            )
 
-        kwargs['route'] = self.route
-        kwargs['Cv'] = Cv
-        kwargs['MW'] = MW
-        kwargs['Vm'] = checks.check_l('Vm',Vm,0)
-        kwargs['Ys'] = checks.check_ul('Ys',Ys,0,1)
+        kwargs["route"] = self.route
+        kwargs["Cv"] = Cv
+        kwargs["MW"] = MW
+        kwargs["Vm"] = checks.check_l("Vm", Vm, 0)
+        kwargs["Ys"] = checks.check_ul("Ys", Ys, 0, 1)
 
         if Cm == None:
-            kwargs['Cm'] = checks.check_l('Cm',Cv * MW / Vm * Ys,0)
+            kwargs["Cm"] = checks.check_l("Cm", Cv * MW / Vm * Ys, 0)
         else:
-            kwargs['Cm'] = checks.check_l('Cm',Cm,0)
+            kwargs["Cm"] = checks.check_l("Cm", Cm, 0)
 
-        kwargs['b'] = checks.check_ul('b',b,0,7.9)
-        kwargs['h'] = checks.check_ul('h',h,0,24)
+        kwargs["b"] = checks.check_ul("b", b, 0, 7.9)
+        kwargs["h"] = checks.check_ul("h", h, 0, 24)
 
         self.inputs = self.model_args(kwargs)
-        kwargs['skips'] = kwargs['skips'] + list(kwargs.keys())
+        kwargs["skips"] = kwargs["skips"] + list(kwargs.keys())
 
-        kwargs['PDR'] = exposures.potential_dose_rate(**kwargs)
-        kwargs['NW'] = exposures.workers_exposed(**kwargs)
-        kwargs['LADD'] = exposures.daily_dose(t=kwargs['ATc'], **kwargs)
-        kwargs['ADD'] = exposures.daily_dose(t=kwargs['AT'], **kwargs)
-        kwargs['APDR'] = exposures.acute_potential_dose_rate(**kwargs)
+        kwargs["PDR"] = exposures.potential_dose_rate(**kwargs)
+        kwargs["NW"] = exposures.workers_exposed(**kwargs)
+        kwargs["LADD"] = exposures.daily_dose(t=kwargs["ATc"], **kwargs)
+        kwargs["ADD"] = exposures.daily_dose(t=kwargs["AT"], **kwargs)
+        kwargs["APDR"] = exposures.acute_potential_dose_rate(**kwargs)
 
         self.outputs = self.model_args(kwargs)
-        self.outputs['I'] = self.outputs.pop('PDR')
+        self.outputs["I"] = self.outputs.pop("PDR")
 
         return
 
     @classmethod
     def get_scenarios(self):
-        return ['user']
+        return ["user"]

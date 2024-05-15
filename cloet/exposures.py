@@ -1,6 +1,7 @@
-#!/usr/bin/env python
+from . import checks
 
-def potential_dose_rate(route,**kwargs):
+
+def potential_dose_rate(route, **kwargs):
     """
     Potential dose rate
 
@@ -20,20 +21,22 @@ def potential_dose_rate(route,**kwargs):
     float, potential dose rate (mg/day)
     """
     if route == "dermal":
-        if 'SQu' in kwargs.keys():
-            return kwargs['SQu'] * kwargs['Yderm'] * kwargs['FT']
+        if "SQu" in kwargs.keys():
+            return kwargs["SQu"] * kwargs["Yderm"] * kwargs["FT"]
         else:
-            return kwargs['S'] * kwargs['Qu'] * kwargs['Yderm'] * kwargs['FT']
-    elif route == 'inhalation':
-        if 'Cm' in kwargs.keys():
-            return kwargs['Cm'] * kwargs['b'] * kwargs['h']
+            return kwargs["S"] * kwargs["Qu"] * kwargs["Yderm"] * kwargs["FT"]
+    elif route == "inhalation":
+        if "Cm" in kwargs.keys():
+            return kwargs["Cm"] * kwargs["b"] * kwargs["h"]
         else:
-            return kwargs['EF'] * kwargs['AH'] * kwargs['Ys'] * kwargs['Sd']
+            return kwargs["EF"] * kwargs["AH"] * kwargs["Ys"] * kwargs["Sd"]
     else:
-        raise RouteException("unknown exposure route provided ("+str(route)+")")
+        raise checks.RouteException(
+            "unknown exposure route provided (" + str(route) + ")"
+        )
 
 
-def workers_exposed(NWexp,NS,**kwargs):
+def workers_exposed(NWexp, NS, **kwargs):
     """
     Total number of workers exposed
 
@@ -75,6 +78,7 @@ def daily_dose(PDR, ED, EY, BW, t, **kwargs):
     """
     days_per_year = 365
     return (PDR * ED * EY) / (BW * t * days_per_year)
+
 
 def acute_potential_dose_rate(PDR, BW, **kwargs):
     """

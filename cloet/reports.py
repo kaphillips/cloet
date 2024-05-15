@@ -1,50 +1,52 @@
 from .checks import checkfile
 import datetime
 
+
 def __units(key):
-    units = {"ADD": "mg/kg-day",
-             "I": "mg/day",
-             "Dexp": "mg/day",
-             "NW": "workers",
-             "LADD":"mg/kg-day",
-             "ADD": "mg/kg-day",
-             "APDR": "mg/kg-day",
-             "NS": "sites",
-             "Sd": "shift/workder-day",
-             "EF":"mg/kg",
-             "AH":"kg/worker-shift",
-             "Ys":"dimensionless",
-             "NWexp":"worker/site",
-             "ED": "days/site-yr",
-             "EY": "years",
-             "BW": "kg",
-             "ATc": "years",
-             "AT": "years",
-             "S":"cm^2",
-             "Qu":"mg/cm^2-event",
-             "Yderm":"dimensionless",
-             "FT":"events/workers-day",
-             "Cv":"ppm",
-             "Cm":"mg/m^3",
-             "T":"K",
-             "G":"g/s",
-             "MW":"g/mol",
-             "Q":"ft^3/min",
-             "k":"dimensionless",
-             "X":"dimensionless",
-             "VP":"torr",
-             "Vm":"L/mol",
-             "b":"m^3/hr",
-             "h":"hrs/day",
-             "KCk":"mg/m^3",
-             "Ypel":"dimensionless",
-             "Cvk":"ppm",
-             "VPpel":"torr",
-             "MWpel":"g/mol",
-             "Ymist":"dimensionless",
-             "Ysf":"dimensionless",
-            }
+    units = {
+        "ADD": "mg/kg-day",
+        "I": "mg/day",
+        "Dexp": "mg/day",
+        "NW": "workers",
+        "LADD": "mg/kg-day",
+        "APDR": "mg/kg-day",
+        "NS": "sites",
+        "Sd": "shift/workder-day",
+        "EF": "mg/kg",
+        "AH": "kg/worker-shift",
+        "Ys": "dimensionless",
+        "NWexp": "worker/site",
+        "ED": "days/site-yr",
+        "EY": "years",
+        "BW": "kg",
+        "ATc": "years",
+        "AT": "years",
+        "S": "cm^2",
+        "Qu": "mg/cm^2-event",
+        "Yderm": "dimensionless",
+        "FT": "events/workers-day",
+        "Cv": "ppm",
+        "Cm": "mg/m^3",
+        "T": "K",
+        "G": "g/s",
+        "MW": "g/mol",
+        "Q": "ft^3/min",
+        "k": "dimensionless",
+        "X": "dimensionless",
+        "VP": "torr",
+        "Vm": "L/mol",
+        "b": "m^3/hr",
+        "h": "hrs/day",
+        "KCk": "mg/m^3",
+        "Ypel": "dimensionless",
+        "Cvk": "ppm",
+        "VPpel": "torr",
+        "MWpel": "g/mol",
+        "Ymist": "dimensionless",
+        "Ysf": "dimensionless",
+    }
     return units[key]
+
 
 def date_stamp(prefix, suffix):
     """
@@ -69,8 +71,8 @@ def date_stamp(prefix, suffix):
 
     hoy = str(datetime.date.today())
     hoy = hoy.split("-")
-    hoy = [hoy[1],hoy[2],hoy[0]]
-    return "_".join([prefix,"".join(hoy)])+"."+suffix
+    hoy = [hoy[1], hoy[2], hoy[0]]
+    return "_".join([prefix, "".join(hoy)]) + "." + suffix
 
 
 def json_report(model):
@@ -89,18 +91,20 @@ def json_report(model):
     """
     equations = {}
     for equation in model.equations.split("\n"):
-        if equation.strip() == "": continue
+        if equation.strip() == "":
+            continue
         lhs = equation.split(" = ")[0].strip()
         rhs = equation.split(" = ")[-1].strip()
         equations[lhs] = rhs
 
-
-    report = dict(route=model.route,
-                  model_name = model.model_name,
-                  scenario = model.scenario,
-                  equations = equations,
-                  inputs = model.inputs,
-                  outputs = model.outputs)
+    report = dict(
+        route=model.route,
+        model_name=model.model_name,
+        scenario=model.scenario,
+        equations=equations,
+        inputs=model.inputs,
+        outputs=model.outputs,
+    )
 
     return report
 
@@ -120,70 +124,124 @@ def text_report(model):
     string, string containing all model attributes
     """
     report = json_report(model)
-    k_len = (list(report['equations'].keys()) +
-             list(report['inputs'].keys()) +
-             list(report['outputs'].keys()))
+    k_len = (
+        list(report["equations"].keys())
+        + list(report["inputs"].keys())
+        + list(report["outputs"].keys())
+    )
     k_len = max([len(k) for k in k_len])
 
-    s = "|"+"".join(["-"]*88)+"|\n"
+    s = "|" + "".join(["-"] * 88) + "|\n"
 
-    s += ("| Exposure Route: {route}{space:>{width}}|\n"
-          .format(route=report['route'], space=" ",
-                  width=90-19-len(report['route'])))
-    s += ("| Exposure Model: {model}{space:>{width}}|\n"
-          .format(model=report['model_name'],space=" ",
-                  width=90-19-len(report['model_name'])))
-    s += ("| Exposure Scenario: {model}{space:>{width}}|\n"
-          .format(model=report['scenario'],space=" ",
-                  width=90-22-len(report['scenario'])))
+    s += "| Exposure Route: {route}{space:>{width}}|\n".format(
+        route=report["route"], space=" ", width=90 - 19 - len(report["route"])
+    )
+    s += "| Exposure Model: {model}{space:>{width}}|\n".format(
+        model=report["model_name"], space=" ", width=90 - 19 - len(report["model_name"])
+    )
+    s += "| Exposure Scenario: {model}{space:>{width}}|\n".format(
+        model=report["scenario"], space=" ", width=90 - 22 - len(report["scenario"])
+    )
 
-    s += ("|"+"".join(["-"]*88)+"|\n")
+    s += "|" + "".join(["-"] * 88) + "|\n"
 
-    s += ("| Model Equations: {space:>{width}}|\n"
-          .format(model=report['scenario'],space=" ",width=90-20))
+    s += "| {model} Model Equations: {space:>{width}}|\n".format(
+        model=report["scenario"], space=" ", width=90 - 20
+    )
 
-    for key, value in report['equations'].items():
-        s += ("|     {rhs:>{rhsw}} = {lhs}{space:>{sw}}|\n"
-              .format(rhs=key,rhsw=k_len,lhs=value,space=" ",
-                      sw=90-5-k_len-len(key)-(k_len-len(key))-len(value)))
+    for key, value in report["equations"].items():
+        s += "|     {rhs:>{rhsw}} = {lhs}{space:>{sw}}|\n".format(
+            rhs=key,
+            rhsw=k_len,
+            lhs=value,
+            space=" ",
+            sw=90 - 5 - k_len - len(key) - (k_len - len(key)) - len(value),
+        )
 
-    s += ("|"+"".join(["-"]*88)+"|\n")
+    s += "|" + "".join(["-"] * 88) + "|\n"
 
-    s += ("| Model Inputs: {space:>{width}}|\n"
-          .format(model=report['scenario'],space=" ",width=90-17))
+    s += "| {model} Model Inputs: {space:>{width}}|\n".format(
+        model=report["scenario"], space=" ", width=90 - 17
+    )
 
-    for key, value in report['inputs'].items():
-        s += ("|     {rhs:>{rhsw}} = {lhs} {units}{space:>{sw}}|\n"
-              .format(rhs=key,rhsw=k_len,lhs=value,units=__units(key),space=" ",
-                      sw=90-6-k_len-len(key)-(k_len-len(key))-len(str(value))-len(__units(key))))
+    for key, value in report["inputs"].items():
+        s += "|     {rhs:>{rhsw}} = {lhs} {units}{space:>{sw}}|\n".format(
+            rhs=key,
+            rhsw=k_len,
+            lhs=value,
+            units=__units(key),
+            space=" ",
+            sw=90
+            - 6
+            - k_len
+            - len(key)
+            - (k_len - len(key))
+            - len(str(value))
+            - len(__units(key)),
+        )
 
-    s += ("|"+"".join(["-"]*88)+"|\n")
+    s += "|" + "".join(["-"] * 88) + "|\n"
 
-    s += ("| Model Results: {space:>{width}}|\n"
-          .format(model=report['scenario'],space=" ",width=90-18))
+    s += "| {model} Model Results: {space:>{width}}|\n".format(
+        model=report["scenario"], space=" ", width=90 - 18
+    )
 
-    for key, value in report['outputs'].items():
-        if type(value) == int:
-            l = len("{lhs}".format(lhs=value))
-            s += ("|     {rhs:>{rhsw}} = {lhs} {units}{space:>{sw}}|\n"
-                  .format(rhs=key,rhsw=k_len,lhs=value,units=__units(key),
-                          space=" ",sw=90-6-k_len-len(key)-(k_len-len(key))-l-len(__units(key))))
+    for key, value in report["outputs"].items():
+        if isinstance(value, int):
+            lhs_len = len("{lhs}".format(lhs=value))
+            s += "|     {rhs:>{rhsw}} = {lhs} {units}{space:>{sw}}|\n".format(
+                rhs=key,
+                rhsw=k_len,
+                lhs=value,
+                units=__units(key),
+                space=" ",
+                sw=90
+                - 6
+                - k_len
+                - len(key)
+                - (k_len - len(key))
+                - lhs_len
+                - len(__units(key)),
+            )
         else:
             test = "{:.5}".format(value)
-            if len(test)>5:
-                l = len("{lhs:.4e}".format(lhs=value))
-                s += ("|     {rhs:>{rhsw}} = {lhs:.4e} {units}{space:>{sw}}|\n"
-                      .format(rhs=key,rhsw=k_len,lhs=value,space=" ",units=__units(key),
-                              sw=90-6-k_len-len(key)-(k_len-len(key))-l-len(__units(key))))
+            if len(test) > 5:
+                lhs_len = len("{lhs:.4e}".format(lhs=value))
+                s += "|     {rhs:>{rhsw}} = {lhs:.4e} {units}{space:>{sw}}|\n".format(
+                    rhs=key,
+                    rhsw=k_len,
+                    lhs=value,
+                    space=" ",
+                    units=__units(key),
+                    sw=90
+                    - 6
+                    - k_len
+                    - len(key)
+                    - (k_len - len(key))
+                    - lhs_len
+                    - len(__units(key)),
+                )
             else:
-                l = len("{lhs:.5}".format(lhs=value))
-                s += ("|     {rhs:>{rhsw}} = {lhs:.5} {units}{space:>{sw}}|\n"
-                      .format(rhs=key,rhsw=k_len,lhs=value,space=" ",units=__units(key),
-                              sw=90-6-k_len-len(key)-(k_len-len(key))-l-len(__units(key))))
-    s += ("|"+"".join(["-"]*88)+"|\n")
+                lhs_len = len("{lhs:.5}".format(lhs=value))
+                s += "|     {rhs:>{rhsw}} = {lhs:.5} {units}{space:>{sw}}|\n".format(
+                    rhs=key,
+                    rhsw=k_len,
+                    lhs=value,
+                    space=" ",
+                    units=__units(key),
+                    sw=90
+                    - 6
+                    - k_len
+                    - len(key)
+                    - (k_len - len(key))
+                    - lhs_len
+                    - len(__units(key)),
+                )
+    s += "|" + "".join(["-"] * 88) + "|\n"
     return s
 
-def file_report(model,filename=None,check_file=True):
+
+def file_report(model, filename=None, check_file=True):
     """
     Description
     -----------
@@ -201,15 +259,16 @@ def file_report(model,filename=None,check_file=True):
                 overridden (default: True)
     """
     report = json_report(model)
-    if filename == None:
-        filename = "_".join([report['model_name'].lower().replace(" ","_"),
-                             report['scenario']])
-        filename = date_stamp(prefix=filename,suffix="txt")
+    if filename is None:
+        filename = "_".join(
+            [report["model_name"].lower().replace(" ", "_"), report["scenario"]]
+        )
+        filename = date_stamp(prefix=filename, suffix="txt")
     if check_file:
         filename = checkfile(filename)
     report = text_report(model)
 
-    with open(filename,'w') as f:
+    with open(filename, "w") as f:
         f.write(report)
 
     return filename
