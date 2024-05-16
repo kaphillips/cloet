@@ -1,5 +1,6 @@
-from .checks import checkfile
 import datetime
+
+from .checks import checkfile
 
 
 def __units(key):

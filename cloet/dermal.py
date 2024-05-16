@@ -1,5 +1,4 @@
-from . import checks
-from . import exposures
+from . import checks, exposures
 
 
 class Dermal(object):
