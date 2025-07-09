@@ -1,3 +1,7 @@
+import os
+
+from .exceptions import BoundsException
+
 def check_ul(name, value, min_val=0, max_val=1):
     """
     Description
@@ -87,6 +91,7 @@ def check_u(name, value, max_val=1):
     return value
 
 
+## TODO: redo with pathlib
 def checkfile(file_name):
     """
     checkfile(file_name)
