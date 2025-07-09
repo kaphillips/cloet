@@ -55,7 +55,7 @@ print(auto_spray.outputs)
  'I': 184.0}
 
 ## Dump model inputs and output to file
-cs.reports.file_report(model=auto_spray,file='autospray_coating_report.txt')
+cloet.reports.file_report(model=auto_spray,file='autospray_coating_report.txt')
 ```
 
 ## Authors
