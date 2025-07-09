@@ -1,5 +1,5 @@
-from . import checks
-from . import exposures
+from . import checks, exposures
+from .exceptions import ScenarioException
 
 
 class Inhalation(object):
@@ -126,7 +126,7 @@ class SmallVolumeSolidsHandling(Inhalation):
 
         self.scenario = str(scenario).lower().replace(", ", ",")
         if self.scenario not in self.get_scenarios():
-            raise checks.ScenarioException(
+            raise ScenarioException(
                 "Error! Invalid value for class argument 'scenario' ("
                 + str(self.scenario)
                 + "). Options are '"
@@ -262,7 +262,7 @@ class MassBalance(Inhalation):
         self.scenario = str(scenario).lower().replace(", ", ",")
 
         if self.scenario not in self.get_scenarios():
-            raise checks.ScenarioException(
+            raise ScenarioException(
                 "Error! Invalid value for class argument 'scenario' ("
                 + str(self.scenario)
                 + "). Options are '"
@@ -415,7 +415,7 @@ class PELLimitingParticulates(Inhalation):
                          """
         self.scenario = str(scenario).lower().replace(", ", ",")
         if scenario not in self.get_scenarios():
-            raise checks.ScenarioException(
+            raise ScenarioException(
                 "Error! Invalid value for class argument 'scenario' ("
                 + str(self.scenario)
                 + "). Options are '"
@@ -557,7 +557,7 @@ class PELLimitingVapors(Inhalation):
                          """
         self.scenario = str(scenario).lower().replace(", ", ",")
         if scenario not in self.get_scenarios():
-            raise checks.ScenarioException(
+            raise ScenarioException(
                 "Error! Invalid value for class argument 'scenario' ("
                 + str(self.scenario)
                 + "). Options are '"
@@ -685,7 +685,7 @@ class TotalPNORPELLimiting(Inhalation):
                          """
         self.scenario = str(scenario).lower().replace(", ", ",")
         if scenario not in self.get_scenarios():
-            raise checks.ScenarioException(
+            raise ScenarioException(
                 "Error! Invalid value for class argument 'scenario' ("
                 + str(self.scenario)
                 + "). Options are '"
@@ -804,7 +804,7 @@ class RespirablePNORPELLimiting(Inhalation):
                          """
         self.scenario = str(scenario).lower().replace(", ", ",")
         if scenario not in self.get_scenarios():
-            raise checks.ScenarioException(
+            raise ScenarioException(
                 "Error! Invalid value for class argument 'scenario' ("
                 + str(self.scenario)
                 + "). Options are '"
@@ -929,7 +929,7 @@ class AutomobileOEMSprayCoating(Inhalation):
                          """
         self.scenario = str(scenario).lower().replace(", ", ",")
         if self.scenario not in self.get_scenarios():
-            raise checks.ScenarioException(
+            raise ScenarioException(
                 "Error! Invalid value for class argument 'scenario' ("
                 + str(self.scenario)
                 + "). Options are '"
@@ -1079,7 +1079,7 @@ class AutomobileRefinishSprayCoating(Inhalation):
                          """
         self.scenario = str(scenario).lower().replace(", ", ",")
         if self.scenario not in self.get_scenarios():
-            raise checks.ScenarioException(
+            raise ScenarioException(
                 "Error! Invalid value for class argument 'scenario' ("
                 + str(self.scenario)
                 + "). Options are '"
@@ -1222,7 +1222,7 @@ class AutomobileSprayCoating(Inhalation):
                          """
         self.scenario = str(scenario).lower().replace(", ", ",")
         if self.scenario not in self.get_scenarios():
-            raise checks.ScenarioException(
+            raise ScenarioException(
                 "Error! Invalid value for class argument 'scenario' ("
                 + str(self.scenario)
                 + "). Options are '"
@@ -1372,7 +1372,7 @@ class UVRollCoating(Inhalation):
                          """
         self.scenario = str(scenario).lower().replace(", ", ",")
         if self.scenario not in self.get_scenarios():
-            raise checks.ScenarioException(
+            raise ScenarioException(
                 "Error! Invalid value for class argument 'scenario' ("
                 + str(self.scenario)
                 + "). Options are '"
@@ -1514,7 +1514,7 @@ class UserDefinedInhalation(Inhalation):
                          """
         self.scenario = str(scenario).lower().replace(", ", ",")
         if scenario not in self.get_scenarios():
-            raise checks.ScenarioException(
+            raise ScenarioException(
                 "Error! Invalid value for class argument 'scenario' ("
                 + str(self.scenario)
                 + "). Options are '"
@@ -1528,7 +1528,7 @@ class UserDefinedInhalation(Inhalation):
         kwargs["Vm"] = checks.check_l("Vm", Vm, 0)
         kwargs["Ys"] = checks.check_ul("Ys", Ys, 0, 1)
 
-        if Cm == None:
+        if Cm is None:
             kwargs["Cm"] = checks.check_l("Cm", Cv * MW / Vm * Ys, 0)
         else:
             kwargs["Cm"] = checks.check_l("Cm", Cm, 0)

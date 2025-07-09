@@ -20,11 +20,7 @@ Purpose:        Occupational exposure calculations performed within OPPT for new
                 evaluate multiple combinations of models, parameters and
                 chemicals.
 """
-from . import checks
-from . import exposures
-from . import dermal
-from . import inhalation
-from . import reports
+from . import checks, dermal, exposures, inhalation, reports
 
 __all__ = ['checks',
            'exposures',

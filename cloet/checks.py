@@ -1,30 +1,6 @@
-#!/usr/bin/env python
 import os
 
-
-class BoundsException(Exception):
-    def __init__(self, msg):
-        self.msg = msg
-
-    def __str__(self):
-        return self.msg
-
-
-class ScenarioException(Exception):
-    def __init__(self, msg):
-        self.msg = msg
-
-    def __str__(self):
-        return self.msg
-
-
-class RouteException(Exception):
-    def __init__(self, msg):
-        self.msg = msg
-
-    def __str__(self):
-        return self.msg
-
+from .exceptions import BoundsException
 
 def check_ul(name, value, min_val=0, max_val=1):
     """
@@ -115,6 +91,7 @@ def check_u(name, value, max_val=1):
     return value
 
 
+## TODO: redo with pathlib
 def checkfile(file_name):
     """
     checkfile(file_name)
